@@ -28,7 +28,7 @@ api_router = APIRouter(prefix="/api")
 
 # Define Models
 class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+    model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     client_name: str
@@ -43,50 +43,42 @@ async def root():
     return {"message": "Hello World"}
 
 # Endpoint temporal para inicializar la base de datos
-
 @api_router.get("/init-database")
 async def initialize_database():
-
-"""
-Endpoint temporal para inicializar la base de datos con datos de prueba.
-Visita: https://tu-dominio.com/api/init-database
-IMPORTANTE: Elimina este endpoint después de usarlo por seguridad.
-"""
-
-try:
-from init_all import init_all
-results = await init_all()
-return {
-    "success": True,
-    "message": "Base de datos inicializada correctamente",
-    "detalles": {
-        "usuarios_creados": results["usuarios"],
-        "banners_creados": results["banners"],
-        "blogs_creados": results["blogs"],
-        "proyectos_creados": results["proyectos"],
-        "errores": results["errores"]
-    },
-    "credenciales": {
-    "admin": "admin@prados.com / admin123",
-    "colaborador": "colaborador@prados.com / colab123",
-    "usuario": "user@prados.com / user123"
-},
-"nota": "ELIMINA ESTE ENDPOINT después de usarlo por seguridad"   
-}
-
-except Exception as e:
-return {
-    "success": False,
-    "error": str(e),
-    "mensaje": "Error al inicializar la base de datos"
-}
+    """
+    Endpoint temporal para inicializar la base de datos con datos de prueba.
+    """
+    try:
+        from init_all import init_all
+        results = await init_all()
+        return {
+            "success": True,
+            "message": "Base de datos inicializada correctamente",
+            "detalles": {
+                "usuarios_creados": results["usuarios"],
+                "banners_creados": results["banners"],
+                "blogs_creados": results["blogs"],
+                "proyectos_creados": results["proyectos"],
+                "errores": results["errores"]
+            },
+            "credenciales": {
+                "admin": "admin@prados.com / admin123",
+                "colaborador": "colaborador@prados.com / colab123",
+                "usuario": "user@prados.com / user123"
+            }
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "mensaje": "Error al inicializar la base de datos"
+        }
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
     status_obj = StatusCheck(**status_dict)
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
     doc = status_obj.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     
@@ -95,10 +87,8 @@ async def create_status_check(input: StatusCheckCreate):
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
     status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
     
-    # Convert ISO string timestamps back to datetime objects
     for check in status_checks:
         if isinstance(check['timestamp'], str):
             check['timestamp'] = datetime.fromisoformat(check['timestamp'])
@@ -147,5 +137,4 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-
     client.close()
