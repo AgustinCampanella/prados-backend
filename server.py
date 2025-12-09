@@ -42,6 +42,45 @@ class StatusCheckCreate(BaseModel):
 async def root():
     return {"message": "Hello World"}
 
+# Endpoint temporal para inicializar la base de datos
+
+@api_router.get("/init-database")
+async def initialize_database():
+
+"""
+Endpoint temporal para inicializar la base de datos con datos de prueba.
+Visita: https://tu-dominio.com/api/init-database
+IMPORTANTE: Elimina este endpoint después de usarlo por seguridad.
+"""
+
+try:
+from init_all import init_all
+results = await init_all()
+return {
+    "success": True,
+    "message": "Base de datos inicializada correctamente",
+    "detalles": {
+        "usuarios_creados": results["usuarios"],
+        "banners_creados": results["banners"],
+        "blogs_creados": results["blogs"],
+        "proyectos_creados": results["proyectos"],
+        "errores": results["errores"]
+    },
+    "credenciales": {
+    "admin": "admin@prados.com / admin123",
+    "colaborador": "colaborador@prados.com / colab123",
+    "usuario": "user@prados.com / user123"
+},
+"nota": "ELIMINA ESTE ENDPOINT después de usarlo por seguridad"   
+}
+
+except Exception as e:
+return {
+    "success": False,
+    "error": str(e),
+    "mensaje": "Error al inicializar la base de datos"
+}
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
@@ -108,4 +147,5 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+
     client.close()
